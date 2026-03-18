@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "destination": "https://pump-time-ai-17520872828.us-west1.run.app/$1",
+      "permanent": true
+    }
+  ]
+}
