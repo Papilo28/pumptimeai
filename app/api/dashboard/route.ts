@@ -1,17 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-export interface CallRecord {
-  id: string; userId: string; from?: string; duration?: number;
-  status?: string; summary?: string; transcript?: string;
-  sentiment?: string; outcome?: string; createdAt: string;
-}
-export interface LeadRecord {
-  id: string; userId: string; name?: string; email?: string;
-  phone?: string; status?: string; notes?: string; createdAt: string;
-}
-
-export const callStore: CallRecord[] = [];
-export const leadStore: LeadRecord[] = [];
+import { callStore, leadStore } from "@/lib/store";
 
 export async function GET(req: NextRequest) {
   const email = req.cookies.get("userEmail")?.value || "";

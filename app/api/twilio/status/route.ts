@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { callStore, leadStore } from "../../dashboard/route";
+import { callStore, leadStore } from "@/lib/store";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "placeholder");
 
