@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
   } catch (err: unknown) {
     console.error("Twilio call error:", err);
     const message = err instanceof Error ? err.message : "Failed to place call";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const code = (err as { code?: number }).code;
+    return NextResponse.json({ error: message, code }, { status: 500 });
   }
 }

@@ -89,6 +89,7 @@ function TestCallModal({ onClose, company, onCallComplete }: { onClose: () => vo
   const [phone, setPhone] = useState("");
   const [state, setState] = useState<"idle"|"calling"|"active"|"done"|"error">("idle");
   const [errMsg, setErrMsg] = useState("");
+  const [errCode, setErrCode] = useState<number | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -105,14 +106,17 @@ function TestCallModal({ onClose, company, onCallComplete }: { onClose: () => vo
 
   async function startCall() {
     if (!phone.trim()) return;
-    setState("calling"); setErrMsg("");
+    setState("calling"); setErrMsg(""); setErrCode(null);
     try {
       const res = await fetch("/api/twilio/call", {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({ to: phone.trim(), company }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to place call");
+      if (!res.ok) {
+        setErrCode(data.code ?? null);
+        throw new Error(data.error || "Failed to place call");
+      }
       setState("active");
       startTimer();
       // After 45s, mark as done and add to call logs
@@ -158,8 +162,11 @@ function TestCallModal({ onClose, company, onCallComplete }: { onClose: () => vo
           </div>
           <label style={{ display:"block", fontSize:"0.78rem", fontWeight:600, color:"#374151", marginBottom:6 }}>Your Phone Number</label>
           <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 (555) 000-0000"
-            style={{ width:"100%", border:"1.5px solid #e5e7eb", borderRadius:10, padding:"0.75rem 1rem", fontSize:"1rem", outline:"none", marginBottom:16, boxSizing:"border-box", fontFamily:"inherit" }}
+            style={{ width:"100%", border:"1.5px solid #e5e7eb", borderRadius:10, padding:"0.75rem 1rem", fontSize:"1rem", outline:"none", marginBottom:8, boxSizing:"border-box", fontFamily:"inherit" }}
             onKeyDown={e => e.key === "Enter" && startCall()} />
+          <p style={{ fontSize:"0.74rem", color:"#9ca3af", margin:"0 0 14px", textAlign:"center" }}>
+            💡 <strong style={{ color:"#6b7280" }}>US numbers (+1) work instantly.</strong> International numbers require Twilio geo-permissions.
+          </p>
           <button onClick={startCall} disabled={!phone.trim()}
             style={{ width:"100%", background:O, color:"#fff", border:"none", padding:"0.9rem", borderRadius:12, fontWeight:700, fontSize:"1rem", cursor:phone.trim() ? "pointer" : "not-allowed", fontFamily:"inherit", boxShadow:`0 4px 18px rgba(232,69,10,.35)`, opacity: phone.trim() ? 1 : 0.6 }}>
             📞 Call Me Now
@@ -215,8 +222,44 @@ function TestCallModal({ onClose, company, onCallComplete }: { onClose: () => vo
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </div>
             <h2 style={{ margin:"0 0 0.5rem", fontWeight:800, color:"#dc2626" }}>Call Failed</h2>
-            <p style={{ color:"#6b7280", fontSize:"0.85rem", marginBottom:"1.25rem" }}>{errMsg || "Could not place the call. Make sure Twilio credentials are set in Railway."}</p>
-            <button onClick={() => setState("idle")} style={{ background:O, color:"#fff", border:"none", padding:"0.75rem 1.5rem", borderRadius:10, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Try Again</button>
+
+            {errCode === 21215 ? (
+              <div style={{ textAlign:"left" }}>
+                <div style={{ background:"#fef9c3", border:"1px solid #fde68a", borderRadius:10, padding:"1rem", marginBottom:"1rem" }}>
+                  <p style={{ margin:"0 0 0.5rem", fontWeight:700, color:"#92400e", fontSize:"0.88rem" }}>⚠️ International Calling Not Enabled</p>
+                  <p style={{ margin:"0 0 0.75rem", color:"#78350f", fontSize:"0.82rem", lineHeight:1.65 }}>
+                    Your Twilio account isn&apos;t authorized to call that country yet. To fix it permanently:
+                  </p>
+                  <ol style={{ margin:"0 0 0.5rem", paddingLeft:"1.1rem", color:"#78350f", fontSize:"0.82rem", lineHeight:1.8 }}>
+                    <li>Go to <strong>Twilio Console → Voice → Settings → Geo Permissions</strong></li>
+                    <li>Find and check your country (e.g. Nigeria)</li>
+                    <li>Click the <strong>Save</strong> button at the bottom</li>
+                    <li>Wait 60 seconds, then try again</li>
+                  </ol>
+                </div>
+                <div style={{ background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:10, padding:"1rem", marginBottom:"1.25rem" }}>
+                  <p style={{ margin:"0 0 0.4rem", fontWeight:700, color:"#15803d", fontSize:"0.88rem" }}>✅ Test with a US number right now</p>
+                  <p style={{ margin:"0 0 0.75rem", color:"#166534", fontSize:"0.82rem", lineHeight:1.65 }}>
+                    US numbers work instantly — no geo-permissions needed. Enter any US number (+1...) below to hear the AI agent now.
+                  </p>
+                  <input
+                    placeholder="+1 (555) 000-0000"
+                    defaultValue="+1"
+                    onChange={e => setPhone(e.target.value)}
+                    style={{ width:"100%", border:"1.5px solid #86efac", borderRadius:8, padding:"0.65rem 0.9rem", fontSize:"0.9rem", outline:"none", boxSizing:"border-box", fontFamily:"inherit", marginBottom:8 }}
+                  />
+                  <button onClick={() => setState("idle")}
+                    style={{ width:"100%", background:"#16a34a", color:"#fff", border:"none", padding:"0.7rem", borderRadius:9, fontWeight:700, fontSize:"0.9rem", cursor:"pointer", fontFamily:"inherit" }}>
+                    Try with US Number →
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p style={{ color:"#6b7280", fontSize:"0.85rem", marginBottom:"1.25rem" }}>{errMsg || "Could not place the call. Make sure Twilio credentials are set in Railway."}</p>
+                <button onClick={() => setState("idle")} style={{ background:O, color:"#fff", border:"none", padding:"0.75rem 1.5rem", borderRadius:10, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Try Again</button>
+              </>
+            )}
           </div>
         </>}
 
