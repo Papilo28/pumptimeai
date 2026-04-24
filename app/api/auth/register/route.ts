@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import { createBrevoContact } from "@/lib/brevo";
 
 const STRIPE_KEY = process.env.STRIPE_SECRET_KEY || "";
 const stripeReady =
@@ -11,8 +12,8 @@ const stripe = stripeReady
 
 const PRICES: Record<string, string> = {
   starter: process.env.STRIPE_PRICE_STARTER || "",
-  pro: process.env.STRIPE_PRICE_PRO || "",
-  agency: process.env.STRIPE_PRICE_AGENCY || "",
+  pro:     process.env.STRIPE_PRICE_PRO     || "",
+  agency:  process.env.STRIPE_PRICE_AGENCY  || "",
 };
 
 function buildCookieResponse(
@@ -34,7 +35,7 @@ function buildCookieResponse(
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, plan = "starter", company, phone } = body;
+    const { name, email, plan = "demo", company, phone } = body;
 
     if (!name || !email) {
       return NextResponse.json(
@@ -43,23 +44,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // ── Always create Brevo contact immediately (fire & forget) ──
+    createBrevoContact({
+      email,
+      name,
+      phone,
+      company,
+      plan,
+      source: "pumptimeai.com signup",
+    }).catch(err => console.error("Brevo async error:", err));
+
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL || "https://app.pumptimeai.com";
 
-    // ── No Stripe configured or "demo" plan: skip to dashboard directly ──
+    // ── No Stripe configured or demo plan: go straight to dashboard ──
     if (!stripeReady || !stripe) {
-      console.log(
-        `Register (no Stripe): ${email}, plan=${plan}, company=${company}`
-      );
+      console.log(`Register (no Stripe): ${email}, plan=${plan}, company=${company}`);
       return buildCookieResponse(
         { success: true, redirectUrl: `/dashboard` },
-        email,
-        name,
-        plan
+        email, name, plan
       );
     }
 
-    // ── Stripe is configured ──
+    // ── Stripe configured: create customer ──
     let customerId = "";
     try {
       const customer = await stripe.customers.create({
@@ -70,25 +77,19 @@ export async function POST(req: NextRequest) {
       customerId = customer.id;
     } catch (stripeErr) {
       console.error("Stripe customer create failed, proceeding without:", stripeErr);
-      // Still let user in — Stripe failing shouldn't block demo access
       return buildCookieResponse(
         { success: true, redirectUrl: `/dashboard` },
-        email,
-        name,
-        plan
+        email, name, plan
       );
     }
 
     const priceId = PRICES[plan];
 
-    // No price for this plan (e.g. "demo") — go straight to dashboard
+    // No price mapped for this plan (e.g. "demo") — go to dashboard
     if (!priceId) {
       return buildCookieResponse(
         { success: true, redirectUrl: `/dashboard` },
-        email,
-        name,
-        plan,
-        customerId
+        email, name, plan, customerId
       );
     }
 
@@ -99,17 +100,15 @@ export async function POST(req: NextRequest) {
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${appUrl}/dashboard?success=true`,
-      cancel_url: `${appUrl}/signup?cancelled=true`,
+      cancel_url:  `${appUrl}/signup?cancelled=true`,
       metadata: { plan, email, company: company || "" },
     });
 
     return buildCookieResponse(
       { checkoutUrl: session.url },
-      email,
-      name,
-      plan,
-      customerId
+      email, name, plan, customerId
     );
+
   } catch (err: unknown) {
     console.error("Register error:", err);
     return NextResponse.json(
