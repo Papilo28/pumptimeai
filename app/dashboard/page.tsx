@@ -31,8 +31,8 @@ function UpgradeModal({ onClose, company }: { onClose: () => void; company: stri
   const [err, setErr] = useState("");
 
   const plans = [
-    { id: "starter", name: "The Starter Plan", price: "$299", desc: "1-2 trucks", hot: false, features: ["200 AI calls/mo", "Booking automation", "Call transcripts", "1 phone number", "Email support"] },
-    { id: "pro",     name: "The Pumper Plan",  price: "$568", desc: "Growing operations", hot: true,  features: ["Unlimited AI calls", "Custom AI voice", "Advanced analytics", "3 phone numbers", "Priority support"] },
+    { id: "starter", name: "The Starter Plan", price: "$97",  desc: "Perfect for 1-2 trucks", hot: false, features: ["200 AI calls/mo", "Appointment booking", "Call transcripts & summaries", "1 phone number", "SMS notifications", "Email support"] },
+    { id: "pro",     name: "The Pumper Plan",  price: "$197", desc: "For growing operations",  hot: true,  features: ["Unlimited AI calls", "Everything in Starter", "Custom AI voice & script", "Advanced analytics", "3 phone numbers", "24/7 priority support"] },
   ];
 
   async function handleChoose(planId: string) {
@@ -332,7 +332,7 @@ function DashboardContent() {
 
       <div style={{ margin:"0 0.75rem 0.75rem", background:NAVY, borderRadius:12, padding:"1.25rem" }}>
         <div style={{ fontSize:"0.65rem", color:"rgba(255,255,255,0.45)", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:6 }}>Current Plan</div>
-        <div style={{ fontWeight:800, color:"#fff", fontSize:"0.9rem", marginBottom:12 }}>{isDemo ? "Demo" : "The Pumper Plan"}</div>
+        <div style={{ fontWeight:800, color:"#fff", fontSize:"0.9rem", marginBottom:12 }}>{isDemo ? "Demo — $0" : "The Pumper Plan · $197/mo"}</div>
         <button onClick={() => setShowUpgrade(true)} style={{ width:"100%", background:O, color:"#fff", border:"none", padding:"0.6rem", borderRadius:8, fontWeight:700, fontSize:"0.82rem", cursor:"pointer", fontFamily:"inherit" }}>
           {isDemo ? "Upgrade to Live →" : "Manage Plan"}
         </button>

@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
   } else if (digit === "2") {
     twiml += `
   <Say voice="Polly.Joanna" language="en-US">
-    Our pricing is based on job size and location. We have plans starting from two hundred and ninety nine dollars per month for one to two truck operations, with unlimited AI calls on higher tiers.
+    Our plans start at ninety seven dollars per month for one to two truck operations, and one hundred and ninety seven dollars per month for unlimited AI calls and growing fleets.
   </Say>
   <Pause length="1"/>
   <Say voice="Polly.Joanna" language="en-US">
